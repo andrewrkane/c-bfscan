@@ -8,7 +8,7 @@
 #include "include/data.c"
 #include "include/heap.c"
 
-#define BASESCORE(T) score+=topicsfreq[n][T-2]*( log(1 + tf[base]/(MU * (cf[topics[n][T]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU)) ); hasScore=1;
+#define BASESCORE(T) score+=topicsfreq[n][T-2]*( log(1 + tf[base]/(MU * (cf[topics[n][T]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU)) ); hasScore++;
 #define SCORE(T) { BASESCORE(T); continue; }
 
 extern void init_tf(char * data_path);
