@@ -9,6 +9,9 @@
 #include "include/heap.c"
 #include "include/threadpool.c"
 
+#define unlikely(expr) __builtin_expect(!!(expr),0)
+#define likely(expr) __builtin_expect(!!(expr),1)
+
 struct arg_struct {
     int topic;
     int startidx;
@@ -46,12 +49,12 @@ int search(struct arg_struct *arg) {
   }
 
   if ( topics[n][1] == 1 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -76,13 +79,13 @@ int search(struct arg_struct *arg) {
       }
     }
   } else if ( topics[n][1] == 2 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -108,14 +111,14 @@ int search(struct arg_struct *arg) {
     }
 
   } else if ( topics[n][1] == 3 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
-        if (collection_tf[base] == topics[n][4]) SCORE(4);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
+        if (unlikely(collection_tf[base] == topics[n][4])) SCORE(4);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -140,15 +143,15 @@ int search(struct arg_struct *arg) {
       }
     }
   } else if ( topics[n][1] == 4 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
-        if (collection_tf[base] == topics[n][4]) SCORE(4);
-        if (collection_tf[base] == topics[n][5]) SCORE(5);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
+        if (unlikely(collection_tf[base] == topics[n][4])) SCORE(4);
+        if (unlikely(collection_tf[base] == topics[n][5])) SCORE(5);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -173,16 +176,16 @@ int search(struct arg_struct *arg) {
       }
     }
   } else if ( topics[n][1] == 5 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
-        if (collection_tf[base] == topics[n][4]) SCORE(4);
-        if (collection_tf[base] == topics[n][5]) SCORE(5);
-        if (collection_tf[base] == topics[n][6]) SCORE(6);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
+        if (unlikely(collection_tf[base] == topics[n][4])) SCORE(4);
+        if (unlikely(collection_tf[base] == topics[n][5])) SCORE(5);
+        if (unlikely(collection_tf[base] == topics[n][6])) SCORE(6);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -207,17 +210,17 @@ int search(struct arg_struct *arg) {
       }
     }
   } else if ( topics[n][1] == 6 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
-        if (collection_tf[base] == topics[n][4]) SCORE(4);
-        if (collection_tf[base] == topics[n][5]) SCORE(5);
-        if (collection_tf[base] == topics[n][6]) SCORE(6);
-        if (collection_tf[base] == topics[n][7]) SCORE(7);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
+        if (unlikely(collection_tf[base] == topics[n][4])) SCORE(4);
+        if (unlikely(collection_tf[base] == topics[n][5])) SCORE(5);
+        if (unlikely(collection_tf[base] == topics[n][6])) SCORE(6);
+        if (unlikely(collection_tf[base] == topics[n][7])) SCORE(7);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -242,18 +245,18 @@ int search(struct arg_struct *arg) {
       }
     }
   } else if ( topics[n][1] == 7 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
-        if (collection_tf[base] == topics[n][4]) SCORE(4);
-        if (collection_tf[base] == topics[n][5]) SCORE(5);
-        if (collection_tf[base] == topics[n][6]) SCORE(6);
-        if (collection_tf[base] == topics[n][7]) SCORE(7);
-        if (collection_tf[base] == topics[n][8]) SCORE(8);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
+        if (unlikely(collection_tf[base] == topics[n][4])) SCORE(4);
+        if (unlikely(collection_tf[base] == topics[n][5])) SCORE(5);
+        if (unlikely(collection_tf[base] == topics[n][6])) SCORE(6);
+        if (unlikely(collection_tf[base] == topics[n][7])) SCORE(7);
+        if (unlikely(collection_tf[base] == topics[n][8])) SCORE(8);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -278,19 +281,19 @@ int search(struct arg_struct *arg) {
       }
     }
   } else if ( topics[n][1] == 8 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
-        if (collection_tf[base] == topics[n][4]) SCORE(4);
-        if (collection_tf[base] == topics[n][5]) SCORE(5);
-        if (collection_tf[base] == topics[n][6]) SCORE(6);
-        if (collection_tf[base] == topics[n][7]) SCORE(7);
-        if (collection_tf[base] == topics[n][8]) SCORE(8);
-        if (collection_tf[base] == topics[n][9]) SCORE(9);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
+        if (unlikely(collection_tf[base] == topics[n][4])) SCORE(4);
+        if (unlikely(collection_tf[base] == topics[n][5])) SCORE(5);
+        if (unlikely(collection_tf[base] == topics[n][6])) SCORE(6);
+        if (unlikely(collection_tf[base] == topics[n][7])) SCORE(7);
+        if (unlikely(collection_tf[base] == topics[n][8])) SCORE(8);
+        if (unlikely(collection_tf[base] == topics[n][9])) SCORE(9);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -315,20 +318,20 @@ int search(struct arg_struct *arg) {
       }
     }
   } else if ( topics[n][1] == 9 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
-        if (collection_tf[base] == topics[n][4]) SCORE(4);
-        if (collection_tf[base] == topics[n][5]) SCORE(5);
-        if (collection_tf[base] == topics[n][6]) SCORE(6);
-        if (collection_tf[base] == topics[n][7]) SCORE(7);
-        if (collection_tf[base] == topics[n][8]) SCORE(8);
-        if (collection_tf[base] == topics[n][9]) SCORE(9);
-        if (collection_tf[base] == topics[n][10]) SCORE(10);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
+        if (unlikely(collection_tf[base] == topics[n][4])) SCORE(4);
+        if (unlikely(collection_tf[base] == topics[n][5])) SCORE(5);
+        if (unlikely(collection_tf[base] == topics[n][6])) SCORE(6);
+        if (unlikely(collection_tf[base] == topics[n][7])) SCORE(7);
+        if (unlikely(collection_tf[base] == topics[n][8])) SCORE(8);
+        if (unlikely(collection_tf[base] == topics[n][9])) SCORE(9);
+        if (unlikely(collection_tf[base] == topics[n][10])) SCORE(10);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -353,21 +356,21 @@ int search(struct arg_struct *arg) {
       }
     }
   } else if ( topics[n][1] == 10 ) {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
-        if (collection_tf[base] == topics[n][2]) SCORE(2);
-        if (collection_tf[base] == topics[n][3]) SCORE(3);
-        if (collection_tf[base] == topics[n][4]) SCORE(4);
-        if (collection_tf[base] == topics[n][5]) SCORE(5);
-        if (collection_tf[base] == topics[n][6]) SCORE(6);
-        if (collection_tf[base] == topics[n][7]) SCORE(7);
-        if (collection_tf[base] == topics[n][8]) SCORE(8);
-        if (collection_tf[base] == topics[n][9]) SCORE(9);
-        if (collection_tf[base] == topics[n][10]) SCORE(10);
-        if (collection_tf[base] == topics[n][11]) SCORE(11);
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+        if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
+        if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
+        if (unlikely(collection_tf[base] == topics[n][4])) SCORE(4);
+        if (unlikely(collection_tf[base] == topics[n][5])) SCORE(5);
+        if (unlikely(collection_tf[base] == topics[n][6])) SCORE(6);
+        if (unlikely(collection_tf[base] == topics[n][7])) SCORE(7);
+        if (unlikely(collection_tf[base] == topics[n][8])) SCORE(8);
+        if (unlikely(collection_tf[base] == topics[n][9])) SCORE(9);
+        if (unlikely(collection_tf[base] == topics[n][10])) SCORE(10);
+        if (unlikely(collection_tf[base] == topics[n][11])) SCORE(11);
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
@@ -392,14 +395,14 @@ int search(struct arg_struct *arg) {
       }
     }
   } else {
-    for (i=start; i<high; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
+    for (i=start; likely(i<high); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         for (t=2; t<2+topics[n][1]; t++) {
-          if ( collection_tf[base] == topics[n][t]) { BASESCORE(t); break; }
+          if (unlikely(collection_tf[base] == topics[n][t])) { BASESCORE(t); break; }
         }
       }
 
-      if (hasScore) {
+      if (unlikely(hasScore)) {
         if (score > min_score) {
           if ( min_score == 0 ) {
             int *docid = malloc(sizeof(int)); *docid = i;
