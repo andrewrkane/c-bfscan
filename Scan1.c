@@ -10,6 +10,9 @@
 
 #define COUNT_SCORING false
 
+#define unlikely(expr) __builtin_expect(!!(expr),0)
+#define likely(expr) __builtin_expect(!!(expr),1)
+
 extern void init_tf(char * data_path);
 int num_docs;
 int total_terms;
@@ -46,10 +49,10 @@ int main(int argc, const char* argv[]) {
     }
 
     base = 0;
-    for (i=0; i<end_doc; i++) {
-      for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
+    for (i=0; likely(i<end_doc); i++) {
+      for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         for (t=0; t<topics[n][1]; t++) {
-          if (collection_tf[base] == topics[n][t+2]) {
+          if (unlikely(collection_tf[base] == topics[n][t+2])) {
             score+=topicsfreq[n][t]*( log(1 + tf[base]/(MU * (cf[topics[n][t+2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU)) );
             break;
           }
@@ -58,7 +61,7 @@ int main(int argc, const char* argv[]) {
 #if COUNT_SCORING
       if (score>0) scored++; else nonscored++;
 #endif
-      if (score > 0) {
+      if (unlikely(score > 0)) {
         // debugging
         //printf("score=%f\n",score);
         if (score > min_score) {

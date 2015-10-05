@@ -9,6 +9,9 @@
 #include "include/heap.c"
 #include "include/threadpool.c"
 
+#define unlikely(expr) __builtin_expect(!!(expr),0)
+#define likely(expr) __builtin_expect(!!(expr),1)
+
 struct arg_struct {
     int topic;
     int startidx;
@@ -42,16 +45,16 @@ int search(struct arg_struct *arg) {
     for (;;) { int p=(low+high)/2; if (p==high) break; if (tweetids[p] > topics_time[n]) high=p; else low=p+1; }
   }
 
-  for (i=start; i<high; i++) {
-    for (int base_end = base+doclengths_ordered[i]; base<base_end; base++) {
+  for (i=start; likely(i<high); i++) {
+    for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
       for (t=0; t<topics[n][1]; t++) {
-        if (collection_tf[base] == topics[n][t+2]) {
+        if (unlikely(collection_tf[base] == topics[n][t+2])) {
           score+=topicsfreq[n][t]*( log(1 + tf[base]/(MU * (cf[topics[n][t+2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU)) );
           break;
         }
       }
     }
-    if (score > 0) {
+    if (unlikely(score > 0)) {
       if (score > min_score) {
         if ( min_score == 0 ) {
           int *docid = malloc(sizeof(int)); *docid = i;
