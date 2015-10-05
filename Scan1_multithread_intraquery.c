@@ -15,6 +15,7 @@ struct arg_struct {
     int endidx;
     int base;
     heap* h;
+    int* done;
 };
 
 extern void init_tf(char * data_path);
@@ -74,6 +75,7 @@ int search(struct arg_struct *arg) {
       score = 0;
     }
   }
+  *(arg->done)=1;
   return 0;
 }
 
@@ -93,12 +95,15 @@ int main(int argc, const char* argv[]) {
     double time_spent;
     
     gettimeofday(&begin, NULL);
+
+    struct threadpool *pool;
+    pool = threadpool_init(nthreads);
+    int taskdone[nthreads];
+
     int n;
     for (n=0; n<num_topics; n++) {
       heap h_array[nthreads];
       memset(h_array,0,sizeof(h_array));
-      struct threadpool *pool;
-      pool = threadpool_init(nthreads);
       int i = 0;
       for (i=0; i<nthreads; i++) {
         struct arg_struct *args = malloc(sizeof *args);
@@ -113,15 +118,18 @@ int main(int argc, const char* argv[]) {
         heap h;
         h_array[i] = h;
         args->h = &h_array[i];
+        taskdone[i]=0;
+        args->done=&taskdone[i];
         threadpool_add_task(pool,search,args,0);
       }
-      threadpool_free(pool,1);
 
       heap h_merge;
       heap_create(&h_merge,0,NULL);
       float* min_key_merge;
       int* min_val_merge;
       for (i=0; i<nthreads; i++) {
+        if (!taskdone[i]) { threadpool_wait_for_workers(pool, &taskdone[i]); }
+        if (!taskdone[i]) { printf("ERROR: threadpool workers did not finish."); } // verify threadpool wait
         float* min_key;
         int* min_val;
         while(heap_delmin(&h_array[i], (void**)&min_key, (void**)&min_val)) {
@@ -147,7 +155,10 @@ int main(int argc, const char* argv[]) {
       heap_destroy(&h_merge);
     }
     
+    threadpool_free(pool,1);
+
     gettimeofday(&end, NULL);
+
     time_spent = (double)((end.tv_sec * 1000000 + end.tv_usec) - (begin.tv_sec * 1000000 + begin.tv_usec));
     total = total + time_spent / 1000.0;
   }

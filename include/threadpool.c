@@ -54,6 +54,7 @@ struct threadpool
 	pthread_mutex_t mutex;
 	pthread_cond_t free_tasks_cond;
 	pthread_cond_t cond;
+	pthread_cond_t done_cond;
 };
 
 /**
@@ -293,6 +294,14 @@ static void *worker_thr_routine(void *data)
 				}
 			}
 
+			/* Wakeup main thread waiting on completion. */
+			if (pthread_cond_broadcast(&(pool->done_cond))) {
+				perror("pthread_cond_broadcast: ");
+				REPORT_ERROR("Warning: Memory was not released.");
+				REPORT_ERROR("Warning: Some of the worker threads may have failed to exit.");
+				return NULL;
+			}
+
 			if (pthread_mutex_unlock(&(pool->free_tasks_mutex))) {
 				perror("pthread_mutex_unlock: ");
 				REPORT_ERROR("The worker thread has exited.");
@@ -403,6 +412,11 @@ struct threadpool* threadpool_init(int num_of_threads)
 		free(pool);
 		return NULL;
 	}
+	if (pthread_cond_init(&(pool->done_cond),NULL)) {
+		perror("pthread_mutex_init: ");
+		free(pool);
+		return NULL;
+	}
 
 	/* Init the jobs queue. */
 	threadpool_queue_init(&(pool->tasks_queue));
@@ -430,9 +444,7 @@ struct threadpool* threadpool_init(int num_of_threads)
 	for (pool->num_of_threads = 0; pool->num_of_threads < num_of_threads; (pool->num_of_threads)++) {
 		if (pthread_create(&(pool->thr_arr[pool->num_of_threads]),NULL,worker_thr_routine,pool)) {
 			perror("pthread_create:");
-
 			threadpool_free(pool,0);
-
 			return NULL;
 		}
 	}
@@ -527,6 +539,37 @@ int threadpool_add_task(struct threadpool *pool, void (*routine)(void*), void *d
 	}
 
 	return 0;
+}
+
+/**
+ * Waits until a worker thread is done with execution.
+ */
+static void threadpool_wait_for_workers(struct threadpool *pool, int* done)
+{
+	if (pthread_mutex_lock(&(pool->mutex))) {
+		perror("pthread_mutex_lock: ");
+		REPORT_ERROR("Warning: Memory was not released.");
+		REPORT_ERROR("Warning: Some of the worker threads may have failed to exit.");
+		return;
+	}
+
+	while (!(*done)) {
+		/* Block until a task has been executed. */
+		if (pthread_cond_wait(&(pool->done_cond),&(pool->mutex))) {
+			perror("pthread_cond_wait: ");
+			if (pthread_mutex_unlock(&(pool->mutex))) {
+				perror("pthread_mutex_unlock: ");
+			}
+			return;
+		}
+	}
+
+	if (pthread_mutex_unlock(&(pool->mutex))) {
+		perror("pthread_mutex_unlock: ");
+		REPORT_ERROR("Warning: Memory was not released.");
+		REPORT_ERROR("Warning: Some of the worker threads may have failed to exit.");
+		return;
+	}
 }
 
 void threadpool_free(struct threadpool *pool, int blocking)
