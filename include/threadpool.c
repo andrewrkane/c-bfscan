@@ -11,6 +11,12 @@
 #include <pthread.h>
 #include <stdio.h>
 
+#define LINUX
+
+#ifdef LINUX
+#include <sched.h>
+#endif
+
 #define THREAD_POOL_DEBUG
 
 #ifdef THREAD_POOL_DEBUG
@@ -440,6 +446,29 @@ struct threadpool* threadpool_init(int num_of_threads)
 		return NULL;
 	}
 
+#ifdef LINUX
+	int numCPU = sysconf( _SC_NPROCESSORS_ONLN );
+	// debugging
+	//printf("numCPU=%i\n",numCPU);
+	/* Start the worker threads. */
+	for (pool->num_of_threads = 0; pool->num_of_threads < num_of_threads; (pool->num_of_threads)++) {
+		/* thread affinify up to number of CPUs */
+		cpu_set_t cpuset; CPU_ZERO(&cpuset); CPU_SET(pool->num_of_threads % numCPU, &cpuset);
+		pthread_attr_t pta; pthread_attr_init(&pta);
+		if (pool->num_of_threads < numCPU) {
+			if (pthread_attr_setaffinity_np(&pta, sizeof(cpu_set_t), &cpuset)) {
+				perror("pthread_attr_setaffinity_np");
+				return NULL;
+			}
+		}
+		/* create */
+		if (pthread_create(&(pool->thr_arr[pool->num_of_threads]),&pta,worker_thr_routine,pool)) {
+			perror("pthread_create:");
+			threadpool_free(pool,0);
+			return NULL;
+		}
+	}
+#else
 	/* Start the worker threads. */
 	for (pool->num_of_threads = 0; pool->num_of_threads < num_of_threads; (pool->num_of_threads)++) {
 		if (pthread_create(&(pool->thr_arr[pool->num_of_threads]),NULL,worker_thr_routine,pool)) {
@@ -448,6 +477,7 @@ struct threadpool* threadpool_init(int num_of_threads)
 			return NULL;
 		}
 	}
+#endif
 
 	return pool;
 }
