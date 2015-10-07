@@ -25,6 +25,8 @@ struct arg_struct {
 #define BASESCORE(T) score+=topicsfreq[n][T-2]*( log(1 + tf[base]/(MU * (cf[topics[n][T]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU)) ); hasScore++;
 #define SCORE(T) { BASESCORE(T); continue; }
 
+#define PREFETCHC __builtin_prefetch(&collection_tf[base+1024]);
+
 extern void init_tf(char * data_path);
 int num_docs;
 int total_terms;
@@ -52,6 +54,7 @@ int search(struct arg_struct *arg) {
 
   if ( topics[n][1] == 1 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
       }
@@ -82,6 +85,7 @@ int search(struct arg_struct *arg) {
     }
   } else if ( topics[n][1] == 2 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -114,6 +118,7 @@ int search(struct arg_struct *arg) {
 
   } else if ( topics[n][1] == 3 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -146,6 +151,7 @@ int search(struct arg_struct *arg) {
     }
   } else if ( topics[n][1] == 4 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -179,6 +185,7 @@ int search(struct arg_struct *arg) {
     }
   } else if ( topics[n][1] == 5 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -213,6 +220,7 @@ int search(struct arg_struct *arg) {
     }
   } else if ( topics[n][1] == 6 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -248,6 +256,7 @@ int search(struct arg_struct *arg) {
     }
   } else if ( topics[n][1] == 7 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -284,6 +293,7 @@ int search(struct arg_struct *arg) {
     }
   } else if ( topics[n][1] == 8 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -321,6 +331,7 @@ int search(struct arg_struct *arg) {
     }
   } else if ( topics[n][1] == 9 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -359,6 +370,7 @@ int search(struct arg_struct *arg) {
     }
   } else if ( topics[n][1] == 10 ) {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         if (unlikely(collection_tf[base] == topics[n][2])) SCORE(2);
         if (unlikely(collection_tf[base] == topics[n][3])) SCORE(3);
@@ -398,6 +410,7 @@ int search(struct arg_struct *arg) {
     }
   } else {
     for (i=start; likely(i<high); i++) {
+      PREFETCHC
       for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
         for (t=2; t<2+topics[n][1]; t++) {
           if (unlikely(collection_tf[base] == topics[n][t])) { BASESCORE(t); break; }

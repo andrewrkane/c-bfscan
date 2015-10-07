@@ -22,6 +22,8 @@ struct arg_struct {
     int* done;
 };
 
+#define PREFETCHC __builtin_prefetch(&collection_tf[base+1024]);
+
 extern void init_tf(char * data_path);
 int num_docs;
 int total_terms;
@@ -47,6 +49,7 @@ int search(struct arg_struct *arg) {
   }
 
   for (i=start; likely(i<high); i++) {
+    PREFETCHC
     for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
       for (t=0; t<topics[n][1]; t++) {
         if (unlikely(collection_tf[base] == topics[n][t+2])) {
