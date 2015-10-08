@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.util.List;
+import java.util.HashMap;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -90,30 +91,47 @@ public class GenerateQuery {
 		TrecTopicSet topics = TrecTopicSet.fromFile(new File(queryPath));
 		int c = 1;
 		String topicStr = "int *topics[] = {\n";
+		String topicfreqStr = "int *topicsfreq[] = {\n";
 		String timeStr = "long topics_time[] = {\n";
 		for ( TrecTopic topic : topics ) {  
 			List<String> queryterms = parse(ANALYZER, topic.getQuery());
-			topicStr += "(int []) {" + c + ", " + queryterms.size() + ", ";
-			timeStr += topic.getQueryTweetTime() + ",\n";
+			// calculate frequency
+			HashMap<String,Integer> freq = new HashMap<String,Integer>();
+			for (String term : queryterms) {
+				Integer f = freq.get(term);
+				freq.put(term,new Integer(f==null?1:f+1));
+			}
+			String tp = "";
+			String tpf = "";
 			int cnt = 0;
 			for (String term : queryterms) {
+				if (freq.get(term) == null) {
+					continue;
+				}
 				cnt ++;
 				int id = termStats.getId(term);
 				if (!termStats.getTerm2Id().containsKey(term)) {
 					id = -1;
 				}
-				if (cnt < queryterms.size()) {
-					topicStr += id + ", ";
-				} else {
-					topicStr += id;
+				if (cnt > 1) {
+					tp += ", ";
+					tpf += ", ";
 				}
+				tp += id;
+				tpf += freq.get(term);
+				freq.remove(term);
 			}
+			topicStr += "(int []) {" + c + ", " + cnt + ", " + tp + "},\n";
+			topicfreqStr += "(int []) {" + tpf + "},\n";
+			timeStr += topic.getQueryTweetTime() + ",\n";
 			c ++;
-			topicStr += "},\n";
 		}
 		topicStr += "};\n";
+		topicfreqStr += "};\n";
 		timeStr += "};\n";
 		bw_query.write(topicStr);
+		bw_query.newLine();
+		bw_query.write(topicfreqStr);
 		bw_query.newLine();
 		bw_query.write(timeStr);
 		bw_query.newLine();
