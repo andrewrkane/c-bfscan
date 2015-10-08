@@ -22,7 +22,7 @@ struct arg_struct {
     int* done;
 };
 
-#define PREFETCHC __builtin_prefetch(&collection_tf[base+1024]);
+#define PREFETCHC //__builtin_prefetch(&collection_tf[base+1024]);
 
 extern void init_tf(char * data_path);
 int num_docs;

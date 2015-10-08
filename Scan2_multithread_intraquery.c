@@ -25,7 +25,7 @@ struct arg_struct {
 #define BASESCORE(T) score+=topicsfreq[n][T-2]*( log(1 + tf[base]/(MU * (cf[topics[n][T]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU)) ); hasScore++;
 #define SCORE(T) { BASESCORE(T); continue; }
 
-#define PREFETCHC __builtin_prefetch(&collection_tf[base+1024]);
+#define PREFETCHC //__builtin_prefetch(&collection_tf[base+1024]);
 
 extern void init_tf(char * data_path);
 int num_docs;
