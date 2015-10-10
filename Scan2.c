@@ -141,7 +141,6 @@ int main(int argc, const char* argv[]) {
           score = 0; hasScore = 0;
         }
       }
-
     } else if ( topics[n][1] == 4 ) {
       for (i=0; likely(i<end_doc); i++) {
         for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
