@@ -9,56 +9,63 @@
 #include "include/heap.c"
 #include "include/threadpool.c"
 
+#define unlikely(expr) __builtin_expect(!!(expr),0)
+#define likely(expr) __builtin_expect(!!(expr),1)
+
 extern void init_tf(char * data_path);
 int num_docs;
 int total_terms;
 int num_topics;
 int search(int n) {
-  int i=0, j=0;
+  int i=0;
   int base=0;
-  float score;
+  float score=0;
+
   int t;
   heap h;
   heap_create(&h,0,NULL);
 
   float* min_key;
   int* min_val;
+  float min_score=0;
 
-  for (i=0; i<num_docs; i++) {
-    if (tweetids[i] > topics_time[n]) {
-      base += doclengths_ordered[i];
-      continue;
-    }
-    score = 0;
-    for (j=0; j<doclengths_ordered[i]; j++) {
-      for (t=2; t<2+topics[n][1]; t++) {
-        if (collection_tf[base+j] == topics[n][t]) {
-            score += log(1 + tf[base+j]/(MU * (cf[topics[n][t]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU));
+  int start_doc=0, end_doc=num_docs;
+  if (tweetids[end_doc-1] > topics_time[n]) { end_doc--;
+    for (;;) { int h=(start_doc+end_doc)/2; if (h==end_doc) break; if (tweetids[h] > topics_time[n]) end_doc=h; else start_doc=h+1; }
+  }
+
+  for (i=0; likely(i<end_doc); i++) {
+    for (int base_end = base+doclengths_ordered[i]; likely(base<base_end); base++) {
+      for (t=0; t<topics[n][1]; t++) {
+        if (unlikely(collection_tf[base] == topics[n][t+2])) {
+          score+=topicsfreq[n][t]*( log(1 + tf[base]/(MU * (cf[topics[n][t+2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU)) );
+          break;
         }
       }
     }
-
-    if (score > 0) {
-      int size = heap_size(&h);
-
-      if ( size < TOP_K ) {
-        int *docid = malloc(sizeof(int)); *docid = i;
-        float *scorez = malloc(sizeof(float)); *scorez = score;
-        heap_insert(&h, scorez, docid);
-      } else {
-        heap_min(&h, (void**)&min_key, (void**)&min_val);
-
-        if (score > *min_key) {
-          heap_delmin(&h, (void**)&min_key, (void**)&min_val);
-
+    if (unlikely(score > 0)) {
+      if (score > min_score) {
+        if ( min_score == 0 ) {
           int *docid = malloc(sizeof(int)); *docid = i;
           float *scorez = malloc(sizeof(float)); *scorez = score;
           heap_insert(&h, scorez, docid);
+          int size = heap_size(&h);
+          if (size>=TOP_K) {
+            heap_min(&h, (void**)&min_key, (void**)&min_val);
+            min_score=*min_key;
+          }
+        } else {
+          heap_delmin(&h, (void**)&min_key, (void**)&min_val);
+          int *docid = malloc(sizeof(int)); *docid = i;
+          float *scorez = malloc(sizeof(float)); *scorez = score;
+          heap_insert(&h, scorez, docid);
+
+          heap_min(&h, (void**)&min_key, (void**)&min_val);
+          min_score=*min_key;
         }
       }
+      score = 0;
     }
-
-    base += doclengths_ordered[i];
   }
 
   int rank = TOP_K;
