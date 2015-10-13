@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -9,6 +10,9 @@
 #include "include/data.c"
 #include "include/heap.c"
 #include "include/threadpool.c"
+
+#define unlikely(expr) __builtin_expect(!!(expr),0)
+#define likely(expr) __builtin_expect(!!(expr),1)
 
 struct arg_struct {
     int topic;
@@ -47,15 +51,15 @@ int search(struct arg_struct *arg) {
   float score_array[8];
   float scores[jump];
 
+  int low=start, high=end;
+  if (tweetids[high-1] > topics_time[n]) { high--;
+    for (;;) { int p=(low+high)/2; if (p==high) break; if (tweetids[p] > topics_time[n]) high=p; else low=p+1; }
+  }
+
   if ( topics[n][1] == 1 ) {
     __m256i query_vec_1 = _mm256_set1_epi32(topics[n][2]);
 
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
-
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -68,7 +72,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -88,7 +92,7 @@ int search(struct arg_struct *arg) {
         } 
       }
 
-      if (scores[0] > 0) {
+      if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -107,7 +111,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -126,7 +130,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -145,7 +149,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -164,7 +168,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -183,7 +187,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -210,11 +214,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_2 = _mm256_set1_epi32(topics[n][3]);
 
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
-
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -227,7 +226,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -246,7 +245,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -266,7 +265,7 @@ int search(struct arg_struct *arg) {
         } 
       }
 
-      if (scores[0] > 0) {
+      if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -285,7 +284,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -304,7 +303,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -323,7 +322,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -342,7 +341,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -361,7 +360,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -388,10 +387,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_2 = _mm256_set1_epi32(topics[n][3]);
     __m256i query_vec_3 = _mm256_set1_epi32(topics[n][4]);
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -404,7 +399,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -423,7 +418,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -442,7 +437,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_3);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -462,7 +457,7 @@ int search(struct arg_struct *arg) {
         }
       }
 
-      if (scores[0] > 0) {
+      if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -481,7 +476,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -500,7 +495,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -519,7 +514,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -538,7 +533,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -557,7 +552,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -585,10 +580,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_3 = _mm256_set1_epi32(topics[n][4]);
     __m256i query_vec_4 = _mm256_set1_epi32(topics[n][5]);
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -601,7 +592,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -620,7 +611,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -639,7 +630,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_3);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -658,7 +649,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_4);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -678,7 +669,7 @@ int search(struct arg_struct *arg) {
         }
       }
 
-      if (scores[0] > 0) {
+      if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -697,7 +688,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -716,7 +707,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -735,7 +726,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -754,7 +745,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -773,7 +764,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -802,10 +793,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_4 = _mm256_set1_epi32(topics[n][5]);
     __m256i query_vec_5 = _mm256_set1_epi32(topics[n][6]);
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -818,7 +805,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -837,7 +824,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -856,7 +843,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_3);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -875,7 +862,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_4);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -894,7 +881,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_5);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -914,7 +901,7 @@ int search(struct arg_struct *arg) {
         }
       }
 
-      if (scores[0] > 0) {
+      if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -933,7 +920,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -952,7 +939,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -971,7 +958,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -990,7 +977,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1009,7 +996,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1039,10 +1026,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_5 = _mm256_set1_epi32(topics[n][6]);
     __m256i query_vec_6 = _mm256_set1_epi32(topics[n][7]);
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -1055,7 +1038,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1074,7 +1057,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1093,7 +1076,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_3);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1112,7 +1095,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_4);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1131,7 +1114,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_5);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1150,7 +1133,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_6);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1170,7 +1153,7 @@ int search(struct arg_struct *arg) {
         }
       }
 
-      if (scores[0] > 0) {
+      if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1189,7 +1172,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1208,7 +1191,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1227,7 +1210,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1246,7 +1229,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1265,7 +1248,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1296,10 +1279,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_6 = _mm256_set1_epi32(topics[n][7]);
     __m256i query_vec_7 = _mm256_set1_epi32(topics[n][8]);
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -1312,7 +1291,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1331,7 +1310,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1350,7 +1329,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_3);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1369,7 +1348,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_4);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1388,7 +1367,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_5);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1407,7 +1386,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_6);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1426,7 +1405,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_7);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][8]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][8]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1446,7 +1425,7 @@ int search(struct arg_struct *arg) {
         }
       }
 
-       if (scores[0] > 0) {
+       if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1465,7 +1444,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1484,7 +1463,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1503,7 +1482,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1522,7 +1501,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1541,7 +1520,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1573,10 +1552,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_7 = _mm256_set1_epi32(topics[n][8]);
     __m256i query_vec_8 = _mm256_set1_epi32(topics[n][9]);
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -1589,7 +1564,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1608,7 +1583,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1627,7 +1602,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_3);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1646,7 +1621,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_4);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1665,7 +1640,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_5);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1684,7 +1659,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_6);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1703,7 +1678,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_7);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][8]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][8]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1722,7 +1697,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_8);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][9]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][9]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1742,7 +1717,7 @@ int search(struct arg_struct *arg) {
         }
       }
 
-      if (scores[0] > 0) {
+      if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1761,7 +1736,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1780,7 +1755,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1799,7 +1774,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1818,7 +1793,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1837,7 +1812,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -1870,10 +1845,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_8 = _mm256_set1_epi32(topics[n][9]);
     __m256i query_vec_9 = _mm256_set1_epi32(topics[n][10]);
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -1886,7 +1857,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1905,7 +1876,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1924,7 +1895,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_3);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1943,7 +1914,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_4);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1962,7 +1933,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_5);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -1981,7 +1952,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_6);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2000,7 +1971,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_7);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][8]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][8]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2019,7 +1990,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_8);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][9]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][9]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2038,7 +2009,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_9);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][10]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][10]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2058,7 +2029,7 @@ int search(struct arg_struct *arg) {
         }
       }
 
-       if (scores[0] > 0) {
+       if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2077,7 +2048,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2096,7 +2067,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2115,7 +2086,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2134,7 +2105,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2153,7 +2124,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2187,10 +2158,6 @@ int search(struct arg_struct *arg) {
     __m256i query_vec_9 = _mm256_set1_epi32(topics[n][10]);
     __m256i query_vec_10 = _mm256_set1_epi32(topics[n][11]);
     for (i=start; i<end; i+=jump) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       len1 = doclengths_ordered_padding[i];
       len2 = doclengths_ordered_padding[i+1];
       len3 = doclengths_ordered_padding[i+2];
@@ -2203,7 +2170,7 @@ int search(struct arg_struct *arg) {
         pos = doc_pos[base+j];
         collect_vec = _mm256_loadu_si256(&collection_tf_padding[base+j]);
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_1);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][2]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2222,7 +2189,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_2);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][3]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2241,7 +2208,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_3);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][4]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2260,7 +2227,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         } 
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_4);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][5]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2279,7 +2246,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_5);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][6]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2298,7 +2265,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_6);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][7]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2317,7 +2284,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_7);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][8]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][8]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2336,7 +2303,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_8);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][9]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][9]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2355,7 +2322,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_9);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][10]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][10]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2374,7 +2341,7 @@ int search(struct arg_struct *arg) {
           scores[pos] = scores[pos] + _mm_cvtss_f32(t4);
         }
         mask = _mm256_cmpeq_epi32(collect_vec, query_vec_10);
-        if (_mm256_movemask_epi8(mask) != 0) {
+        if (unlikely(_mm256_movemask_epi8(mask) != 0)) {
           memset(score_array, 0.0, sizeof(score_array));
           score_array[0] = log(1 + tf_padding[base+j]/(MU * (cf[topics[n][11]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
           score_array[1] = log(1 + tf_padding[base+j+1]/(MU * (cf[topics[n][11]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i+pos] + MU));
@@ -2394,7 +2361,7 @@ int search(struct arg_struct *arg) {
         }
       }
 
-       if (scores[0] > 0) {
+       if (unlikely(scores[0] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2413,7 +2380,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[1] > 0) {
+      if (unlikely(scores[1] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2432,7 +2399,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[2] > 0) {
+      if (unlikely(scores[2] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2451,7 +2418,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[3] > 0) {
+      if (unlikely(scores[3] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2470,7 +2437,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[4] > 0) {
+      if (unlikely(scores[4] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2489,7 +2456,7 @@ int search(struct arg_struct *arg) {
           }
         }
       }
-      if (scores[5] > 0) {
+      if (unlikely(scores[5] > 0)) {
         int size = heap_size(h);
 
         if ( size < TOP_K ) {
@@ -2513,14 +2480,10 @@ int search(struct arg_struct *arg) {
     }
   } else {
     for (i=start; i<end; i++) {
-      if (tweetids[i] > topics_time[n]) {
-        base += doclengths_ordered_padding[i];
-        continue;
-      }
       score = 0;
       for (j=0; j<doclengths_ordered_padding[i]; j++) {
         for (t=2; t<2+topics[n][1]; t++) {
-          if ( collection_tf_padding[base+j] == topics[n][t]) {
+          if (unlikely(collection_tf_padding[base+j] == topics[n][t])) {
             score+=log(1 + tf_padding[base+j]/(MU * (cf[topics[n][t]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU));
           }
         }
@@ -2558,7 +2521,7 @@ int search(struct arg_struct *arg) {
     score = 0;
     for (j=0; j<doclengths_ordered_padding[i]; j++) {
       for (t=2; t<2+topics[n][1]; t++) {
-        if (collection_tf_padding[base+j] == topics[n][t]) {
+        if (unlikely(collection_tf_padding[base+j] == topics[n][t])) {
           score += log(1 + tf_padding[base+j]/(MU * (cf[collection_tf_padding[base+j]] + 1) / (total_terms + 1))) + log(MU / (doclengths[i] + MU));
         }
       }
