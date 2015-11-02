@@ -19,7 +19,7 @@ struct arg_struct {
     int endidx;
     int base;
     heap* h;
-    int* done;
+    int done;
 };
 
 #define PREFETCHC //__builtin_prefetch(&collection_tf[base+1024]);
@@ -82,7 +82,7 @@ int search(struct arg_struct *arg) {
       score = 0;
     }
   }
-  *(arg->done)=1;
+  arg->done=1;
   return 0;
 }
 
@@ -105,15 +105,15 @@ int main(int argc, const char* argv[]) {
 
     struct threadpool *pool;
     pool = threadpool_init(nthreads);
-    int taskdone[nthreads];
 
     int n;
     for (n=0; n<num_topics; n++) {
       heap h_array[nthreads];
       memset(h_array,0,sizeof(h_array));
       int i = 0;
+      struct arg_struct *arglist = malloc(nthreads * sizeof (struct arg_struct));
       for (i=0; i<nthreads; i++) {
-        struct arg_struct *args = malloc(sizeof *args);
+        struct arg_struct *args = &arglist[i];
         args->topic = n;
         args->startidx = i*(int)(ceil((double)num_docs / nthreads));
         if ((i+1)*(int)(ceil((double)num_docs / nthreads)) > num_docs) {
@@ -125,8 +125,7 @@ int main(int argc, const char* argv[]) {
         heap h;
         h_array[i] = h;
         args->h = &h_array[i];
-        taskdone[i]=0;
-        args->done=&taskdone[i];
+        args->done=0;
         threadpool_add_task(pool,search,args,0);
       }
 
@@ -135,8 +134,9 @@ int main(int argc, const char* argv[]) {
       float* min_key_merge;
       int* min_val_merge;
       for (i=0; i<nthreads; i++) {
-        if (!taskdone[i]) { threadpool_wait_for_workers(pool, &taskdone[i]); }
-        if (!taskdone[i]) { printf("ERROR: threadpool workers did not finish."); } // verify threadpool wait
+        struct arg_struct *args = &arglist[i];
+        if (!args->done) { threadpool_wait_for_workers(pool, &args->done); }
+        if (!args->done) { printf("ERROR: threadpool workers did not finish."); } // verify threadpool wait
         float* min_key;
         int* min_val;
         while(heap_delmin(&h_array[i], (void**)&min_key, (void**)&min_val)) {
@@ -160,6 +160,8 @@ int main(int argc, const char* argv[]) {
         rank--;
       }
       heap_destroy(&h_merge);
+
+      free(arglist); arglist=0;
     }
     
     threadpool_free(pool,1);
