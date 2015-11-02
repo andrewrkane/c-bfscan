@@ -21,10 +21,10 @@ Scan2: Scan2.h Scan*.c include/*.h include/*.c
 	$(GCC) Scan_multithread_interquery.c -o Scan2_er.exe -include $(QUERY) -include Scan2.h $(TI)
 
 
-AVXScan1: AVXScan1*.c include/*.h include/*.c
-	$(GCCAVX) AVXScan1.c -o AVXScan1_sg.exe -include $(QUERY) $(TIP)
-	$(GCCAVX) AVXScan1_multithread_intraquery.c -o AVXScan1_ra.exe -include $(QUERY) $(TIP)
-	$(GCCAVX) AVXScan1_multithread_interquery.c -o AVXScan1_er.exe -include $(QUERY) $(TIP)
+AVXScan1: AVXScan1.h Scan*.c include/*.h include/*.c
+	$(GCCAVX) Scan_singlethread.c -o AVXScan1_sg.exe -include $(QUERY) -include AVXScan1.h $(TIP)
+	$(GCCAVX) Scan_multithread_intraquery.c -o AVXScan1_ra.exe -include $(QUERY) -include AVXScan1.h $(TIP)
+	$(GCCAVX) Scan_multithread_interquery.c -o AVXScan1_er.exe -include $(QUERY) -include AVXScan1.h $(TIP)
 
 
 AVXScan2: AVXScan2*.c include/*.h include/*.c
