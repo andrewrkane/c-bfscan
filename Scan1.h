@@ -1,6 +1,23 @@
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#include <string.h>
+
+#include "include/constants.h"
+#include "include/data.c"
+#include "include/heap.c"
+
+#define SCANNAME "Scan1"
 
 #define unlikely(expr) __builtin_expect(!!(expr),0)
 #define likely(expr) __builtin_expect(!!(expr),1)
+
+extern void init_tf(char * data_path);
+int num_docs;
+int total_terms;
+int num_topics;
 
 struct arg_struct {
     int topic;

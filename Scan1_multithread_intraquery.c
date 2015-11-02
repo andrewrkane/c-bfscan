@@ -1,21 +1,5 @@
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <sys/time.h>
-#include <string.h>
 
-#include "include/constants.h"
-#include "include/data.c"
-#include "include/heap.c"
 #include "include/threadpool.c"
-
-#include "Scan1.h"
-
-extern void init_tf(char * data_path);
-int num_docs;
-int total_terms;
-int num_topics;
 
 int search(struct threadpool *pool, int nthreads, int n) {
   heap h_array[nthreads];
@@ -67,7 +51,7 @@ int search(struct threadpool *pool, int nthreads, int n) {
   
   int rank = TOP_K;
   while (heap_delmin(&h_merge, (void**)&min_key_merge, (void**)&min_val_merge)) {
-    printf("MB%02d Q0 %ld %d %f Scan1_multithread_intraquery\n", (n+1), tweetids[*min_val_merge], rank, *min_key_merge);
+    printf("MB%02d Q0 %ld %d %f " SCANNAME "_multithread_intraquery\n", (n+1), tweetids[*min_val_merge], rank, *min_key_merge);
     rank--;
   }
   heap_destroy(&h_merge);

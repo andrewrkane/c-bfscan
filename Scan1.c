@@ -1,19 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <string.h>
-
-#include "include/constants.h"
-#include "include/data.c"
-#include "include/heap.c"
-
-#include "Scan1.h"
-
-extern void init_tf(char * data_path);
-int num_docs;
-int total_terms;
-int num_topics;
 
 int search(int n) {
   struct arg_struct *args = malloc(sizeof (struct arg_struct));
@@ -31,7 +15,7 @@ int search(int n) {
   int* min_val;
   int rank = TOP_K;
   while (heap_delmin(&h, (void**)&min_key, (void**)&min_val)) {
-    printf("MB%02d Q0 %ld %d %f Scan1\n", (n+1), tweetids[*min_val], rank, *min_key);
+    printf("MB%02d Q0 %ld %d %f " SCANNAME "\n", (n+1), tweetids[*min_val], rank, *min_key);
     rank--;
   }
   

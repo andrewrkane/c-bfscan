@@ -10,9 +10,9 @@ all: Scan1 Scan2 AVXScan1 AVXScan2
 
 
 Scan1: Scan1*.c include/*.h include/*.c
-	$(GCC) Scan1.c -o Scan1_sg.exe -include $(QUERY)
-	$(GCC) Scan1_multithread_intraquery.c -o Scan1_ra.exe -include $(QUERY) $(TI)
-	$(GCC) Scan1_multithread_interquery.c -o Scan1_er.exe -include $(QUERY) $(TI)
+	$(GCC) Scan1.c -o Scan1_sg.exe -include $(QUERY) -include Scan1.h
+	$(GCC) Scan1_multithread_intraquery.c -o Scan1_ra.exe -include $(QUERY) -include Scan1.h $(TI)
+	$(GCC) Scan1_multithread_interquery.c -o Scan1_er.exe -include $(QUERY) -include Scan1.h $(TI)
 
 
 Scan2: Scan2*.c include/*.h include/*.c
